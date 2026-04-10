@@ -2,10 +2,38 @@ import base64
 import io
 from datetime import datetime
 
+import cv2
 import numpy as np
 import requests
 import streamlit as st
 from PIL import Image
+
+
+def validate_image(image_bytes: bytes) -> list[str]:
+    """Return a list of warning strings. Empty list = image is good."""
+    warnings = []
+    img = np.array(Image.open(io.BytesIO(image_bytes)).convert("RGB"))
+    h, w = img.shape[:2]
+
+    # 1. Resolution too low
+    if w < 200 or h < 200:
+        warnings.append("Image is too small. Move closer to the camera.")
+
+    # 2. Brightness check (LAB L* channel)
+    lab   = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+    mean_l = lab[:, :, 0].mean()
+    if mean_l < 60:
+        warnings.append("Image is too dark. Move to a brighter area or use better lighting.")
+    elif mean_l > 220:
+        warnings.append("Image is overexposed. Reduce direct light or move away from the light source.")
+
+    # 3. Blur / sharpness check (Laplacian variance)
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    blur_score = cv2.Laplacian(gray, cv2.CV_64F).var()
+    if blur_score < 40:
+        warnings.append("Image is blurry. Hold the camera steady and ensure the face is in focus.")
+
+    return warnings
 
 _LOCAL_URL = "http://localhost:8000"
 _HF_URL    = "https://primeintern10-skinscope-backend.hf.space"
@@ -265,12 +293,15 @@ with tab_analysis:
                 st.session_state.uploaded_image = uploaded.getvalue()
                 st.session_state.analysis_result = None
         else:
-            camera = st.camera_input("cam", label_visibility="collapsed")
+            camera = st.camera_input("cam", label_visibility="collapsed", key="camera_analysis")
             if camera:
                 st.session_state.uploaded_image = camera.getvalue()
                 st.session_state.analysis_result = None
 
         if st.session_state.uploaded_image:
+            issues = validate_image(st.session_state.uploaded_image)
+            for w in issues:
+                st.warning(w)
             st.markdown('<div class="img-label" style="margin-top:16px">Preview</div>', unsafe_allow_html=True)
             st.image(st.session_state.uploaded_image, use_container_width=True)
 
@@ -390,6 +421,9 @@ with tab_debug:
                 st.session_state.analysis_result  = None
 
         if st.session_state.uploaded_image:
+            issues = validate_image(st.session_state.uploaded_image)
+            for w in issues:
+                st.warning(w)
             st.markdown('<div class="img-label" style="margin-top:16px">Original</div>', unsafe_allow_html=True)
             st.image(st.session_state.uploaded_image, use_container_width=True)
 
