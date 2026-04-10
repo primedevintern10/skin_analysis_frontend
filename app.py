@@ -95,6 +95,9 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     font-size: 0.88em;
 }
 .feature-row:last-child { border-bottom: none; }
+
+/* remove empty space from collapsed radio labels */
+[data-testid="stRadio"] > label:first-child { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -131,7 +134,6 @@ with tab_default:
     left, right = st.columns([1, 1], gap="large")
 
     with left:
-        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         input_method = st.radio(
             "Input method",
             ["📤 Upload Image", "📷 Take Photo"],
@@ -152,7 +154,6 @@ with tab_default:
             if camera:
                 st.session_state.uploaded_image = camera.getvalue()
                 st.session_state.analysis_result = None
-        st.markdown('</div>', unsafe_allow_html=True)
 
         if st.session_state.uploaded_image:
             st.image(st.session_state.uploaded_image, use_container_width=True)
@@ -213,7 +214,6 @@ with tab_debug:
     left_d, right_d = st.columns([1.4, 1], gap="large")
 
     with left_d:
-        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         input_method_d = st.radio(
             "Input method debug",
             ["📤 Upload Image", "📷 Take Photo"],
@@ -237,7 +237,6 @@ with tab_debug:
                 st.session_state.uploaded_image = camera_d.getvalue()
                 st.session_state.detection_result = None
                 st.session_state.analysis_result = None
-        st.markdown('</div>', unsafe_allow_html=True)
 
         if st.session_state.uploaded_image:
             st.markdown("### 🖼️ Original Image")
