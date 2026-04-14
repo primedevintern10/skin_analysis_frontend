@@ -381,28 +381,6 @@ with tab_analysis:
             </div>
             """, unsafe_allow_html=True)
 
-            # ── Timing panel ──────────────────────────────────────────────────
-            if timing:
-                st.markdown(f"""
-                <div class="timing-grid">
-                    <div class="timing-box">
-                        <div class="t-label">Skin Crop</div>
-                        <div class="t-value">{timing.get('skin_crop_s', 0):.3f}<span class="t-unit"> s</span></div>
-                    </div>
-                    <div class="timing-box">
-                        <div class="t-label">Pipeline</div>
-                        <div class="t-value">{timing.get('parallel_pipeline_s', 0):.3f}<span class="t-unit"> s</span></div>
-                    </div>
-                    <div class="timing-box">
-                        <div class="t-label">Scoring</div>
-                        <div class="t-value">{timing.get('scoring_s', 0):.3f}<span class="t-unit"> s</span></div>
-                    </div>
-                    <div class="timing-box highlight">
-                        <div class="t-label">Total</div>
-                        <div class="t-value">{timing.get('total_s', 0):.3f}<span class="t-unit"> s</span></div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
 
             high_c = sum(1 for c in concerns if c["severity"] == "High")
             mod_c  = sum(1 for c in concerns if c["severity"] == "Moderate")
