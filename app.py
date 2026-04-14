@@ -242,26 +242,6 @@ html, body, [class*="css"] {
 .timing-box .t-unit  { font-size: 0.65rem; color: #9ca3af; }
 .timing-box.highlight .t-value { color: #4f46e5; }
 
-/* ── VLM comparison table ── */
-.compare-header {
-    display: grid; grid-template-columns: 1fr 100px 100px;
-    padding: 6px 16px; font-size: 0.65rem; font-weight: 600;
-    color: #9ca3af; text-transform: uppercase; letter-spacing: 0.8px;
-}
-.compare-row {
-    display: grid; grid-template-columns: 1fr 100px 100px;
-    align-items: center; padding: 10px 16px;
-    border-radius: 8px; margin-bottom: 4px;
-    background: #fff; border: 1px solid #f3f4f6;
-    font-size: 0.82rem;
-}
-.compare-row:hover { border-color: #e5e7eb; }
-.compare-name { font-weight: 500; color: #374151; }
-.compare-cell { text-align: center; font-weight: 700; font-size: 0.85rem; }
-.compare-cell.high     { color: #ef4444; }
-.compare-cell.moderate { color: #f59e0b; }
-.compare-cell.low      { color: #10b981; }
-
 /* ── Feature table ── */
 .feat-row {
     display: flex;
@@ -311,7 +291,7 @@ st.markdown("""
             <div class="logo-sub">AI Skin Analysis</div>
         </div>
     </div>
-    <div class="topbar-tag">Powered by MediaPipe · ViT · EfficientNet</div>
+    <div class="topbar-tag">Powered by MediaPipe · ViT · EfficientNet · Rule-Based</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -407,23 +387,19 @@ with tab_analysis:
                 <div class="timing-grid">
                     <div class="timing-box">
                         <div class="t-label">Skin Crop</div>
-                        <div class="t-value">{timing.get('skin_crop_ms', 0):.0f}<span class="t-unit"> ms</span></div>
+                        <div class="t-value">{timing.get('skin_crop_s', 0):.3f}<span class="t-unit"> s</span></div>
                     </div>
                     <div class="timing-box">
                         <div class="t-label">Pipeline</div>
-                        <div class="t-value">{timing.get('parallel_pipeline_ms', 0):.0f}<span class="t-unit"> ms</span></div>
-                    </div>
-                    <div class="timing-box highlight">
-                        <div class="t-label">Qwen3-VL</div>
-                        <div class="t-value">{timing.get('vlm_inference_ms', 0):.0f}<span class="t-unit"> ms</span></div>
+                        <div class="t-value">{timing.get('parallel_pipeline_s', 0):.3f}<span class="t-unit"> s</span></div>
                     </div>
                     <div class="timing-box">
                         <div class="t-label">Scoring</div>
-                        <div class="t-value">{timing.get('scoring_ms', 0):.0f}<span class="t-unit"> ms</span></div>
+                        <div class="t-value">{timing.get('scoring_s', 0):.3f}<span class="t-unit"> s</span></div>
                     </div>
-                    <div class="timing-box">
+                    <div class="timing-box highlight">
                         <div class="t-label">Total</div>
-                        <div class="t-value">{timing.get('total_ms', 0)/1000:.2f}<span class="t-unit"> s</span></div>
+                        <div class="t-value">{timing.get('total_s', 0):.3f}<span class="t-unit"> s</span></div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -584,7 +560,6 @@ with tab_debug:
         features    = data["features"]
         models_used = data.get("models_used", [])
         skin_type   = data.get("skin_type", "unknown")
-        vlm_concerns = data.get("vlm_concerns", [])
         timing      = data.get("timing", {})
 
         st.markdown('<hr class="thin-divider">', unsafe_allow_html=True)
@@ -614,23 +589,19 @@ with tab_debug:
             <div class="timing-grid">
                 <div class="timing-box">
                     <div class="t-label">Skin Crop</div>
-                    <div class="t-value">{timing.get('skin_crop_ms', 0):.0f}<span class="t-unit"> ms</span></div>
+                    <div class="t-value">{timing.get('skin_crop_s', 0):.3f}<span class="t-unit"> s</span></div>
                 </div>
                 <div class="timing-box">
                     <div class="t-label">Parallel Pipeline</div>
-                    <div class="t-value">{timing.get('parallel_pipeline_ms', 0):.0f}<span class="t-unit"> ms</span></div>
-                </div>
-                <div class="timing-box highlight">
-                    <div class="t-label">Qwen3-VL Inference</div>
-                    <div class="t-value">{timing.get('vlm_inference_ms', 0):.0f}<span class="t-unit"> ms</span></div>
+                    <div class="t-value">{timing.get('parallel_pipeline_s', 0):.3f}<span class="t-unit"> s</span></div>
                 </div>
                 <div class="timing-box">
                     <div class="t-label">Scoring</div>
-                    <div class="t-value">{timing.get('scoring_ms', 0):.0f}<span class="t-unit"> ms</span></div>
+                    <div class="t-value">{timing.get('scoring_s', 0):.3f}<span class="t-unit"> s</span></div>
                 </div>
-                <div class="timing-box">
+                <div class="timing-box highlight">
                     <div class="t-label">Total</div>
-                    <div class="t-value">{timing.get('total_ms', 0)/1000:.2f}<span class="t-unit"> s</span></div>
+                    <div class="t-value">{timing.get('total_s', 0):.3f}<span class="t-unit"> s</span></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -659,54 +630,29 @@ with tab_debug:
         </div>
         """, unsafe_allow_html=True)
 
-        # ── Side-by-side concern comparison ──────────────────────────────────
-        if vlm_concerns:
-            st.markdown('<div class="section-label">Concern Scores — Pipeline vs Qwen3-VL</div>', unsafe_allow_html=True)
-            vlm_map = {c["name"]: c for c in vlm_concerns}
-            st.markdown("""
-            <div class="compare-header">
-                <span>Concern</span>
-                <span style="text-align:center">Pipeline</span>
-                <span style="text-align:center">Qwen3-VL</span>
+        st.markdown('<div class="section-label">Concern Breakdown</div>', unsafe_allow_html=True)
+        for concern in concerns:
+            sev   = concern["severity"].lower()
+            score = concern["score"]
+            pct   = int((score - 10) / 85 * 100)
+            st.markdown(f"""
+            <div class="concern-row">
+                <div class="concern-left">
+                    <div class="concern-dot {sev}"></div>
+                    <div>
+                        <div class="concern-name">{concern['name']}</div>
+                        <div class="concern-desc">{concern['description']}</div>
+                    </div>
+                </div>
+                <div class="concern-right">
+                    <div class="concern-bar-wrap">
+                        <div class="concern-bar {sev}" style="width:{pct}%"></div>
+                    </div>
+                    <span class="concern-score {sev}">{score:.0f}</span>
+                    <span class="sev-pill {sev}">{concern['severity']}</span>
+                </div>
             </div>
             """, unsafe_allow_html=True)
-            for concern in concerns:
-                p_sev   = concern["severity"].lower()
-                p_score = concern["score"]
-                vlm_c   = vlm_map.get(concern["name"], {})
-                v_score = vlm_c.get("score", 0)
-                v_sev   = vlm_c.get("severity", "low").lower()
-                st.markdown(f"""
-                <div class="compare-row">
-                    <span class="compare-name">{concern['name']}</span>
-                    <span class="compare-cell {p_sev}">{p_score:.0f}</span>
-                    <span class="compare-cell {v_sev}">{v_score:.0f}</span>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="section-label">Concern Breakdown</div>', unsafe_allow_html=True)
-            for concern in concerns:
-                sev   = concern["severity"].lower()
-                score = concern["score"]
-                pct   = int((score - 10) / 85 * 100)
-                st.markdown(f"""
-                <div class="concern-row">
-                    <div class="concern-left">
-                        <div class="concern-dot {sev}"></div>
-                        <div>
-                            <div class="concern-name">{concern['name']}</div>
-                            <div class="concern-desc">{concern['description']}</div>
-                        </div>
-                    </div>
-                    <div class="concern-right">
-                        <div class="concern-bar-wrap">
-                            <div class="concern-bar {sev}" style="width:{pct}%"></div>
-                        </div>
-                        <span class="concern-score {sev}">{score:.0f}</span>
-                        <span class="sev-pill {sev}">{concern['severity']}</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
 
         with st.expander("Raw Feature Values"):
             feature_labels = {
@@ -774,6 +720,6 @@ with tab_debug:
 # ── Footer ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="text-align:center; color:#d1d5db; font-size:0.72rem; margin-top:48px; padding-top:16px; border-top:1px solid #f3f4f6;">
-    SkinScope &nbsp;·&nbsp; MediaPipe &nbsp;·&nbsp; OpenCV &nbsp;·&nbsp; skintelligent-acne &nbsp;·&nbsp; EfficientNet-B0 &nbsp;·&nbsp; Qwen3-VL-2B-Instruct
+    SkinScope &nbsp;·&nbsp; MediaPipe &nbsp;·&nbsp; OpenCV &nbsp;·&nbsp; skintelligent-acne &nbsp;·&nbsp; EfficientNet-B0
 </div>
 """, unsafe_allow_html=True)
