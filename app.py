@@ -375,7 +375,7 @@ with tab_analysis:
             <div class="skin-type-card">
                 <div class="skin-type-icon">{skin_type_icons.get(skin_type, "❓")}</div>
                 <div>
-                    <div class="skin-type-label">Skin Type · Qwen3-VL</div>
+                    <div class="skin-type-label">Skin Type</div>
                     <div class="skin-type-value">{skin_type}</div>
                 </div>
             </div>
